@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+/* Ensure proper height calculations */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#__next {
+  height: 100%;
+}
+
+/* MapLibre GL JS styles */
+.maplibregl-popup-content {
+  max-width: 400px;
+  max-height: 300px;
+  overflow: auto;
+  color: #111827 !important; /* text-gray-900 */
+  background-color: white !important;
+}
+
+.maplibregl-popup-close-button {
+  font-size: 16px;
+  padding: 4px 8px;
+  color: #6b7280 !important; /* text-gray-500 */
+}
+
+/* Ensure popup content has proper text color */
+.maplibregl-popup-content h3,
+.maplibregl-popup-content div,
+.maplibregl-popup-content textarea {
+  color: #111827 !important; /* text-gray-900 */
+}
