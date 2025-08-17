@@ -22,17 +22,18 @@ const CategorySchema = z.object({
 
 const BrandSchema = z.object({
   names: z.object({
-    primary: z.string().nullable(),
+    primary: z.string().nullable().optional(),
     common: z.record(z.string()).nullable().optional(),
     rules: z.array(z.object({
       variant: z.string(),
       value: z.string()
     })).nullable().optional()
   }),
-
+  wikidata: z.string().nullable().optional(),
   counts: z.object({
     places: z.number(),
-  })
+    brands: z.number()
+  }).optional()
 })
 
 const PlaceGeometrySchema = z.object({

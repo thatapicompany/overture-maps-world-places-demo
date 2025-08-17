@@ -17,7 +17,7 @@ export interface Category {
 export interface Brand {
   names: {
     primary?: string | null
-    common?: Record<string, string>
+    common?: Record<string, string> | null
     rules?: Array<{
       variant: string
       value: string
