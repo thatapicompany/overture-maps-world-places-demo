@@ -21,7 +21,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 })
   const [radius, setRadius] = useState(2000)
-  const [showRadius, setShowRadius] = useState(false)
+  const [limit, setLimit] = useState(DEFAULT_RESULT_LIMIT)
   const [autoSearch, setAutoSearch] = useState(true)
   
   // Refs
@@ -33,12 +33,12 @@ export default function Home() {
     loadInitialData()
   }, [])
 
-  // Load categories when API key changes
+  // Load categories when API key or map center changes
   useEffect(() => {
-    if (apiKey) {
+    if (apiKey && mapCenter) {
       loadCategories()
     }
-  }, [apiKey])
+  }, [apiKey, mapCenter])
 
   // Load brands when selected categories change
   useEffect(() => {
@@ -101,18 +101,10 @@ export default function Home() {
 
   const loadBrands = async () => {
     try {
-      // Get country code for current map center
-      const countryCode = await overtureClient.getCountryCodeFor(
-        mapCenter.lat,
-        mapCenter.lng,
-        apiKey
-      )
-
       const brandsData = await overtureClient.getBrands(apiKey, {
         lat: mapCenter.lat,
         lng: mapCenter.lng,
         radius,
-        country: countryCode,
         categories: selectedCategories
       })
       
@@ -135,7 +127,7 @@ export default function Home() {
         lat: center.lat,
         lng: center.lng,
         radius,
-        limit: DEFAULT_RESULT_LIMIT,
+        limit,
         categories: selectedCategories?.length > 0 ? selectedCategories.join(',') : undefined,
         brand_name: selectedBrand || undefined
       })
@@ -150,11 +142,12 @@ export default function Home() {
     }
   }
 
-  // Show radius circle for 1s when radius changes
   const handleRadiusChange = (newRadius: number) => {
     setRadius(newRadius)
-    setShowRadius(true)
-    setTimeout(() => setShowRadius(false), 1000)
+  }
+
+  const handleLimitChange = (newLimit: number) => {
+    setLimit(newLimit)
   }
 
   const handleClearResults = () => {
@@ -257,6 +250,8 @@ export default function Home() {
         onBrandChange={handleBrandChange}
         radius={radius}
         onRadiusChange={handleRadiusChange}
+        limit={limit}
+        onLimitChange={handleLimitChange}
         autoSearch={autoSearch}
         onAutoSearchChange={setAutoSearch}
         onShowPlaces={handleShowPlaces}
@@ -272,7 +267,6 @@ export default function Home() {
           onMapMove={handleMapMove}
           places={places}
           onPlaceClick={handlePlaceClick}
-          showRadius={showRadius}
           radius={radius}
           center={mapCenter}
         />

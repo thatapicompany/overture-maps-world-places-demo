@@ -17,9 +17,9 @@ export interface MapViewProps {
 }
 
 export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, showRadius, radius, center }: MapViewProps) {
-  // Show/hide radius circle
+  // Show radius circle
   useEffect(() => {
-    if (!map.current || !showRadius || !radius || !center) return
+    if (!map.current || !radius || !center) return
 
     const mapInstance = map.current
     // Remove previous radius layer/source if exists
@@ -42,15 +42,26 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       source: 'radius-circle',
       paint: {
         'fill-color': '#3B82F6',
-        'fill-opacity': 0.15
+        'fill-opacity': 0.1
+      }
+    })
+    mapInstance.addLayer({
+      id: 'radius-circle-outline',
+      type: 'line',
+      source: 'radius-circle',
+      paint: {
+        'line-color': '#3B82F6',
+        'line-width': 2,
+        'line-opacity': 0.6
       }
     })
 
     return () => {
       if (mapInstance.getLayer('radius-circle')) mapInstance.removeLayer('radius-circle')
+      if (mapInstance.getLayer('radius-circle-outline')) mapInstance.removeLayer('radius-circle-outline')
       if (mapInstance.getSource('radius-circle')) mapInstance.removeSource('radius-circle')
     }
-  }, [showRadius, radius, center])
+  }, [radius, center])
 
   // Helper to create a circle polygon as GeoJSON
   function createCircle(lng: number, lat: number, radiusMeters: number, points = 64) {

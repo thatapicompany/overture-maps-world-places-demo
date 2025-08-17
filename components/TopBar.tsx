@@ -16,6 +16,8 @@ export interface TopBarProps {
   onBrandChange: (brand: string | null) => void
   radius: number
   onRadiusChange: (radius: number) => void
+  limit: number
+  onLimitChange: (limit: number) => void
   autoSearch: boolean
   onAutoSearchChange: (autoSearch: boolean) => void
   placeCount: number
@@ -39,15 +41,23 @@ export default function TopBar({
   isLoading,
   radius,
   onRadiusChange,
+  limit,
+  onLimitChange,
   autoSearch,
   onAutoSearchChange
 }: TopBarProps) {
   const [localRadius, setLocalRadius] = useState(radius)
+  const [localLimit, setLocalLimit] = useState(limit)
 
   // Sync localRadius with prop
   useEffect(() => {
     setLocalRadius(radius)
   }, [radius])
+
+  // Sync localLimit with prop
+  useEffect(() => {
+    setLocalLimit(limit)
+  }, [limit])
 
   // Debounce radius change
   useEffect(() => {
@@ -58,18 +68,28 @@ export default function TopBar({
       return () => clearTimeout(timeout)
     }
   }, [localRadius])
+
+  // Debounce limit change
+  useEffect(() => {
+    if (localLimit !== limit) {
+      const timeout = setTimeout(() => {
+        onLimitChange(localLimit)
+      }, 300)
+      return () => clearTimeout(timeout)
+    }
+  }, [localLimit])
   const [localApiKey, setLocalApiKey] = useState(apiKey)
 
   // Convert categories to select options
   const categoryOptions: SelectOption[] = categories.map(cat => ({
     value: cat.primary,
-    label: `${cat.primary} (${cat?.ext_counts?.places || cat?.counts?.places || 0} places)`
+    label: `${cat.primary} (${cat?.counts?.places} places)`
   }))
 
   // Convert brands to select options
   const brandOptions: SelectOption[] = brands.map(brand => ({
     value: brand.names.primary,
-    label: brand.names.primary
+    label: `${brand.names.primary} (${brand?.counts?.places} places)`
   }))
 
   // Handle API key changes with debouncing
@@ -140,7 +160,7 @@ export default function TopBar({
           {/* Brands Select */}
           <div className="w-full lg:w-64">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Brands
+              Brands / Retail Chains (null if independent)
             </label>
             <Select
               options={brandOptions}
@@ -171,6 +191,24 @@ export default function TopBar({
             />
           </div>
 
+          {/* Limit Input */}
+          <div className="w-full lg:w-40 flex flex-col justify-end">
+            <label htmlFor="limit-input" className="block text-sm font-medium text-gray-700 mb-1">
+              Limit (max results)
+            </label>
+            <input
+              id="limit-input"
+              type="number"
+              min={1}
+              max={25000}
+              step={50}
+              value={localLimit}
+              onChange={e => setLocalLimit(Number(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              disabled={isLoading}
+            />
+          </div>
+
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
             <button
@@ -187,18 +225,10 @@ export default function TopBar({
                   Loading...
                 </div>
               ) : (
-                'Show places here'
+                'Update Places'
               )}
             </button>
 
-            {placeCount > 0 && (
-              <button
-                onClick={onClearResults}
-                className="px-4 py-2 bg-gray-500 text-white font-medium rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Clear results
-              </button>
-            )}
           </div>
 
           {/* Auto-Search Checkbox */}
@@ -210,7 +240,7 @@ export default function TopBar({
                 onChange={(e) => onAutoSearchChange(e.target.checked)}
                 className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
-              Auto-Search when moving map
+              Update when moving map
             </label>
           </div>
 
