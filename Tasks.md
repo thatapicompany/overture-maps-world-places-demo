@@ -431,7 +431,7 @@ The Overture Maps World Places Demo application has been successfully built and 
 5. Show loading state during update
 
 **Acceptance Criteria**:
-- [x] Brands update when map moves to different countries
+- [x] Brands update when map moves to different lat/long
 - [x] Category selection filters brands correctly
 - [x] Loading states show during brand updates
 - [x] Graceful handling of edge cases

@@ -14,8 +14,12 @@ export interface TopBarProps {
   brands: Brand[]
   selectedBrand: string | null
   onBrandChange: (brand: string | null) => void
-  onShowPlaces: () => void
+  radius: number
+  onRadiusChange: (radius: number) => void
+  autoSearch: boolean
+  onAutoSearchChange: (autoSearch: boolean) => void
   placeCount: number
+  onShowPlaces: () => void
   onClearResults: () => void
   isLoading: boolean
 }
@@ -32,14 +36,34 @@ export default function TopBar({
   onShowPlaces,
   placeCount,
   onClearResults,
-  isLoading
+  isLoading,
+  radius,
+  onRadiusChange,
+  autoSearch,
+  onAutoSearchChange
 }: TopBarProps) {
+  const [localRadius, setLocalRadius] = useState(radius)
+
+  // Sync localRadius with prop
+  useEffect(() => {
+    setLocalRadius(radius)
+  }, [radius])
+
+  // Debounce radius change
+  useEffect(() => {
+    if (localRadius !== radius) {
+      const timeout = setTimeout(() => {
+        onRadiusChange(localRadius)
+      }, 300)
+      return () => clearTimeout(timeout)
+    }
+  }, [localRadius])
   const [localApiKey, setLocalApiKey] = useState(apiKey)
 
   // Convert categories to select options
   const categoryOptions: SelectOption[] = categories.map(cat => ({
     value: cat.primary,
-    label: `${cat.primary} (${cat?.ext_counts?.places} places)`
+    label: `${cat.primary} (${cat?.ext_counts?.places || cat?.counts?.places || 0} places)`
   }))
 
   // Convert brands to select options
@@ -112,6 +136,7 @@ export default function TopBar({
             />
           </div>
 
+
           {/* Brands Select */}
           <div className="w-full lg:w-64">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -124,6 +149,24 @@ export default function TopBar({
               placeholder="Select brand..."
               multiple={false}
               searchable={true}
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* Radius Input */}
+          <div className="w-full lg:w-40 flex flex-col justify-end">
+            <label htmlFor="radius-input" className="block text-sm font-medium text-gray-700 mb-1">
+              Radius (meters)
+            </label>
+            <input
+              id="radius-input"
+              type="number"
+              min={100}
+              max={10000}
+              step={100}
+              value={localRadius}
+              onChange={e => setLocalRadius(Number(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               disabled={isLoading}
             />
           </div>
@@ -156,6 +199,19 @@ export default function TopBar({
                 Clear results
               </button>
             )}
+          </div>
+
+          {/* Auto-Search Checkbox */}
+          <div className="flex items-center">
+            <label className="flex items-center text-sm text-gray-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoSearch}
+                onChange={(e) => onAutoSearchChange(e.target.checked)}
+                className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              Auto-Search when moving map
+            </label>
           </div>
 
           {/* Place Count */}

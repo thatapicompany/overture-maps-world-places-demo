@@ -20,6 +20,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 })
+  const [radius, setRadius] = useState(2000)
+  const [showRadius, setShowRadius] = useState(false)
+  const [autoSearch, setAutoSearch] = useState(true)
   
   // Refs
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -37,12 +40,23 @@ export default function Home() {
     }
   }, [apiKey])
 
-  // Load brands when map center or selected categories change
+  // Load brands when selected categories change
   useEffect(() => {
-    if (apiKey && mapCenter) {
+    if (apiKey && selectedCategories?.length > 0) {
       loadBrands()
     }
-  }, [apiKey, mapCenter, selectedCategories])
+  }, [apiKey, selectedCategories])
+
+  // Auto-search when map moves (if enabled)
+  useEffect(() => {
+    if (autoSearch && mapRef.current && apiKey) {
+      const timeoutId = setTimeout(() => {
+        handleShowPlaces()
+      }, 1000) // Wait 1 second after map stops moving
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [mapCenter, autoSearch, apiKey])
 
   const loadInitialData = async () => {
     try {
@@ -73,7 +87,7 @@ export default function Home() {
       const categoriesData = await overtureClient.getCategories(apiKey, {
         lat: mapCenter.lat,
         lng: mapCenter.lng,
-        radius: 1000
+        radius
       })
       
       setCategories(categoriesData)
@@ -97,7 +111,7 @@ export default function Home() {
       const brandsData = await overtureClient.getBrands(apiKey, {
         lat: mapCenter.lat,
         lng: mapCenter.lng,
-        radius: 1000,
+        radius,
         country: countryCode,
         categories: selectedCategories
       })
@@ -120,9 +134,9 @@ export default function Home() {
       const placesData = await overtureClient.getPlacesByCenter(apiKey, {
         lat: center.lat,
         lng: center.lng,
-        radius: DEFAULT_SEARCH_RADIUS,
+        radius,
         limit: DEFAULT_RESULT_LIMIT,
-        categories: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
+        categories: selectedCategories?.length > 0 ? selectedCategories.join(',') : undefined,
         brand_name: selectedBrand || undefined
       })
 
@@ -134,6 +148,13 @@ export default function Home() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Show radius circle for 1s when radius changes
+  const handleRadiusChange = (newRadius: number) => {
+    setRadius(newRadius)
+    setShowRadius(true)
+    setTimeout(() => setShowRadius(false), 1000)
   }
 
   const handleClearResults = () => {
@@ -157,7 +178,7 @@ export default function Home() {
     const coordinates = feature.geometry.coordinates.slice()
     const popupContent = `
       <div class="p-4 text-gray-900">
-        <h3 class="font-semibold mb-2 text-gray-900">${feature.properties.names?.primary || 'Unknown Place'}</h3>
+        <h3 class="font-semibold mb-2 text-gray-900">${feature.properties.names?.primary || feature.properties.ext_name||'Unknown Place'}</h3>
         <textarea 
           class="w-full h-32 p-2 border border-gray-300 rounded text-xs font-mono text-gray-900 bg-white" 
           readonly
@@ -234,6 +255,10 @@ export default function Home() {
         brands={brands}
         selectedBrand={selectedBrand}
         onBrandChange={handleBrandChange}
+        radius={radius}
+        onRadiusChange={handleRadiusChange}
+        autoSearch={autoSearch}
+        onAutoSearchChange={setAutoSearch}
         onShowPlaces={handleShowPlaces}
         placeCount={placeCount}
         onClearResults={handleClearResults}
@@ -247,6 +272,9 @@ export default function Home() {
           onMapMove={handleMapMove}
           places={places}
           onPlaceClick={handlePlaceClick}
+          showRadius={showRadius}
+          radius={radius}
+          center={mapCenter}
         />
       </div>
     </div>

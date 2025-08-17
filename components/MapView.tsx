@@ -11,9 +11,69 @@ export interface MapViewProps {
   onMapMove: (center: { lat: number; lng: number }) => void
   places: GeoJSON | null
   onPlaceClick: (feature: any) => void
+  showRadius?: boolean
+  radius?: number
+  center?: { lat: number; lng: number }
 }
 
-export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick }: MapViewProps) {
+export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, showRadius, radius, center }: MapViewProps) {
+  // Show/hide radius circle
+  useEffect(() => {
+    if (!map.current || !showRadius || !radius || !center) return
+
+    const mapInstance = map.current
+    // Remove previous radius layer/source if exists
+    if (mapInstance.getLayer('radius-circle')) {
+      mapInstance.removeLayer('radius-circle')
+    }
+    if (mapInstance.getSource('radius-circle')) {
+      mapInstance.removeSource('radius-circle')
+    }
+
+    // Add GeoJSON source for circle
+    const circleGeoJSON = createCircle(center.lng, center.lat, radius)
+    mapInstance.addSource('radius-circle', {
+      type: 'geojson',
+      data: circleGeoJSON
+    })
+    mapInstance.addLayer({
+      id: 'radius-circle',
+      type: 'fill',
+      source: 'radius-circle',
+      paint: {
+        'fill-color': '#3B82F6',
+        'fill-opacity': 0.15
+      }
+    })
+
+    return () => {
+      if (mapInstance.getLayer('radius-circle')) mapInstance.removeLayer('radius-circle')
+      if (mapInstance.getSource('radius-circle')) mapInstance.removeSource('radius-circle')
+    }
+  }, [showRadius, radius, center])
+
+  // Helper to create a circle polygon as GeoJSON
+  function createCircle(lng: number, lat: number, radiusMeters: number, points = 64) {
+    const coords = []
+    const earthRadius = 6378137
+    for (let i = 0; i <= points; i++) {
+      const angle = (i * 360) / points
+      const rad = (angle * Math.PI) / 180
+      const dx = radiusMeters * Math.cos(rad)
+      const dy = radiusMeters * Math.sin(rad)
+      const newLng = lng + (dx / (earthRadius * Math.cos((lat * Math.PI) / 180))) * (180 / Math.PI)
+      const newLat = lat + (dy / earthRadius) * (180 / Math.PI)
+      coords.push([newLng, newLat])
+    }
+    return {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [coords]
+      },
+      properties: {}
+    }
+  }
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const [isMapLoaded, setIsMapLoaded] = useState(false)

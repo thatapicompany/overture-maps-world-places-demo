@@ -147,7 +147,7 @@ export default function Select({
         aria-disabled={disabled}
       >
         <div className="flex-1 min-w-0">
-          <span className={`block truncate ${!selectedOptions.length ? 'text-gray-500' : ''}`}>
+          <span className={`block truncate ${!selectedOptions.length ? 'text-gray-500' : 'text-gray-900'}`}>
             {displayValue}
           </span>
         </div>
@@ -209,7 +209,7 @@ export default function Select({
 
       {/* Dropdown menu */}
       {isOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-10 w-full min-w-max mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
           {/* Search input */}
           {searchable && (
             <div className="sticky top-0 bg-white border-b border-gray-200 p-2">
@@ -256,7 +256,7 @@ export default function Select({
                           className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                       )}
-                      <span className="block truncate">{option.label}</span>
+                      <span className="block whitespace-nowrap">{option.label}</span>
                     </div>
                   </li>
                 )

@@ -2,7 +2,13 @@
 
 export interface Category {
   primary: string
-  ext_counts: {
+  //for json response
+  counts?: {
+    places: number
+    brands: number
+  }
+  //for geojson response
+  ext_counts?: {
     places: number
     brands: number
   }
@@ -16,6 +22,11 @@ export interface Brand {
       variant: string
       value: string
     }>
+  }
+  wikidata?: string | null
+  counts?: {
+    places: number
+    brands: number
   }
 }
 
@@ -75,7 +86,13 @@ export interface Place {
 
 export interface Country {
   country: string
-  ext_counts: {
+  //for json response
+  counts?: {
+    places: number
+    brands: number
+  }
+  //for geojson response
+  ext_counts?: {
     places: number
     brands: number
   }
