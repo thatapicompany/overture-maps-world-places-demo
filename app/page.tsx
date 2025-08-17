@@ -28,6 +28,32 @@ export default function Home() {
   const mapRef = useRef<maplibregl.Map | null>(null)
   const popupRef = useRef<maplibregl.Popup | null>(null)
 
+  // Helper function to extract error message
+  const getErrorMessage = (error: any): string => {
+    // Handle OvertureAPIError from the client
+    if (error?.name === 'OvertureAPIError') {
+      // If the error has response data with a message, use that
+      if (error?.response?.message) {
+        return error.response.message
+      }
+      // Otherwise use the error message itself
+      return error.message
+    }
+    // Handle HTTP response errors
+    if (error?.response?.data?.message) {
+      return error.response.data.message
+    }
+    // Handle general error objects
+    if (error?.message) {
+      return error.message
+    }
+    // Handle string errors
+    if (typeof error === 'string') {
+      return error
+    }
+    return 'An unexpected error occurred'
+  }
+
   // Load initial data
   useEffect(() => {
     loadInitialData()
@@ -93,7 +119,7 @@ export default function Home() {
       setCategories(categoriesData)
     } catch (error) {
       console.error('Failed to load categories:', error)
-      setError('Failed to load categories')
+      setError(`Failed to load categories: ${getErrorMessage(error)}`)
     } finally {
       setIsLoading(false)
     }
@@ -136,7 +162,7 @@ export default function Home() {
       setPlaceCount(placesData.features.length)
     } catch (error) {
       console.error('Failed to load places:', error)
-      setError('Failed to load places')
+      setError(`Failed to load places: ${getErrorMessage(error)}`)
     } finally {
       setIsLoading(false)
     }

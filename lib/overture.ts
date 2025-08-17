@@ -160,9 +160,22 @@ class OvertureClient {
       }
 
       if (!response.ok) {
+        let errorMessage = `API request failed: ${response.status} ${response.statusText}`
+        let errorData = null
+        
+        try {
+          errorData = await response.json()
+          if (errorData?.message) {
+            errorMessage = errorData.message
+          }
+        } catch (e) {
+          // If we can't parse the error response, use the default message
+        }
+        
         throw new OvertureAPIError(
-          `API request failed: ${response.status} ${response.statusText}`,
-          response.status
+          errorMessage,
+          response.status,
+          errorData
         )
       }
 
