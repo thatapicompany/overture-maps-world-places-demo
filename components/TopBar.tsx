@@ -86,10 +86,12 @@ export default function TopBar({
     label: `${cat.primary} (${cat?.counts?.places} places)`
   }))
 
+  //console.log('Category options:', categoryOptions)
+
   // Convert brands to select options
   const brandOptions: SelectOption[] = brands.map(brand => ({
-    value: brand.names.primary,
-    label: `${brand.names.primary} (${brand?.counts?.places} places)`
+    value: brand.names?.primary || "none",
+    label: `${brand.names.primary || "none"} (${brand?.counts?.places} places)`
   }))
 
   // Handle API key changes with debouncing
@@ -160,7 +162,7 @@ export default function TopBar({
           {/* Brands Select */}
           <div className="w-full lg:w-64">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Brands / Retail Chains (null if independent)
+              Brand / Retail Chain
             </label>
             <Select
               options={brandOptions}

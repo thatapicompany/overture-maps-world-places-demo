@@ -7,13 +7,13 @@ An interactive map application that uses the Overture Maps API to search and dis
 - **Interactive Map**: Full-screen MapLibre GL JS map with OpenStreetMap tiles
 - **API Integration**: Direct integration with Overture Maps API
 - **Dynamic Filtering**: Filter places by categories and brands
-- **Country-based Brand Filtering**: Brands automatically filter based on map location and selected categories
-- **Place Search**: Search for places at the current map center with configurable radius
+- **Country-based Brand Filtering**: Brands and categories automatically update based on map location and selected categories
+- **Place Search**: Search for places at the current map center with configurable radius and result limit
 - **GeoJSON Rendering**: Places displayed as interactive markers on the map
 - **Click Popups**: Click on places to view detailed information in JSON format
 - **State Persistence**: Viewport, API key, and selections saved in localStorage
 - **Responsive Design**: Mobile-friendly interface with responsive layout
-- **Error Handling**: Graceful error handling with user-friendly messages
+- **Error Handling**: Graceful error handling with user-friendly messages, including detailed API error responses
 
 ## Tech Stack
 
@@ -72,22 +72,30 @@ An interactive map application that uses the Overture Maps API to search and dis
    - Use the navigation controls in the top-right corner
    - The map remembers your last viewport position
 
+
 3. **Categories**: 
    - Select one or more categories to filter places
-   - Categories are loaded based on the current map center
+   - Categories are loaded and refreshed based on the current map center and radius
    - Multi-select is supported
 
 4. **Brands**: 
    - Select a brand to filter places
-   - Brands automatically update based on the current country and selected categories
+   - Brands automatically update based on the current map location and selected categories
    - Single select only
 
-5. **Searching Places**:
-   - Click "Show places here" to search for places at the current map center
+5. **Radius & Limit**:
+   - Adjust the search radius (in meters) and result limit (up to 25,000) using the number inputs in the top bar
+   - The radius circle is always visible on the map
+
+6. **Auto-Search**:
+   - Use the "Auto-Search when moving map" checkbox to enable or disable automatic place search after moving the map
+
+7. **Searching Places**:
+   - Click "Show places here" to search for places at the current map center, or let auto-search do it for you
    - Places will appear as blue markers on the map
    - The count of found places is displayed
 
-6. **Viewing Place Details**:
+8. **Viewing Place Details**:
    - Click on any place marker to view details
    - A popup will show the place name and JSON properties
    - Click "Clear results" to remove all places from the map
@@ -109,6 +117,7 @@ Key configuration constants can be found in `lib/config.ts`:
 - `DEFAULT_RESULT_LIMIT`: 200 places
 - `MAP_MOVE_DEBOUNCE_MS`: 400ms
 - `DEFAULT_MAP_CENTER`: NYC (40.7128, -74.0060, zoom 12)
+- `MAX_RESULT_LIMIT`: 25000 (enforced in UI)
 
 ## Testing
 
@@ -196,11 +205,13 @@ curl -H "x-api-key: DEMO-API-KEY" \
 3. **CORS errors**: The application makes direct API calls from the browser
 4. **Performance issues**: Consider reducing the search radius or result limit
 
+
 ### Error Messages
 
-- **"Failed to load categories"**: Check API key and network connection
-- **"Failed to load places"**: Verify coordinates and API parameters
-- **"No options found"**: Try adjusting the search radius or location
+- **API errors**: The app will display detailed error messages from the Overture Maps API, including demo account restrictions, invalid parameters, and more.
+- **"Failed to load categories"**: Check API key, network connection, and map location
+- **"Failed to load places"**: Verify coordinates, API parameters, and result limit
+- **"No options found"**: Try adjusting the search radius, limit, or location
 
 ## Contributing
 

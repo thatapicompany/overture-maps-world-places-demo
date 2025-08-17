@@ -5,7 +5,7 @@ import TopBar from '@/components/TopBar'
 import MapView from '@/components/MapView'
 import { overtureClient } from '@/lib/overture'
 import { DEFAULT_API_KEY, DEFAULT_SEARCH_RADIUS, DEFAULT_RESULT_LIMIT, STORAGE_KEYS } from '@/lib/config'
-import type { Category, Brand, GeoJSON } from '@/lib/types'
+import type { Category, Brand, Place } from '@/lib/types'
 import maplibregl from 'maplibre-gl'
 
 export default function Home() {
@@ -13,9 +13,9 @@ export default function Home() {
   const [apiKey, setApiKey] = useState(DEFAULT_API_KEY)
   const [categories, setCategories] = useState<Category[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
-  const [places, setPlaces] = useState<GeoJSON | null>(null)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['pharmacy'])
+  const [selectedBrand, setSelectedBrand] = useState<string | null>('Walgreens')
+  const [places, setPlaces] = useState<Place[] | null>(null)
   const [placeCount, setPlaceCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,6 +23,7 @@ export default function Home() {
   const [radius, setRadius] = useState(2000)
   const [limit, setLimit] = useState(DEFAULT_RESULT_LIMIT)
   const [autoSearch, setAutoSearch] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   
   // Refs
   const mapRef = useRef<maplibregl.Map | null>(null)
@@ -75,14 +76,26 @@ export default function Home() {
 
   // Auto-search when map moves (if enabled)
   useEffect(() => {
-    if (autoSearch && mapRef.current && apiKey) {
+    if (autoSearch && mapRef.current && apiKey && !isInitialLoad) {
       const timeoutId = setTimeout(() => {
         handleShowPlaces()
       }, 1000) // Wait 1 second after map stops moving
       
       return () => clearTimeout(timeoutId)
     }
-  }, [mapCenter, autoSearch, apiKey])
+  }, [mapCenter, autoSearch, apiKey, isInitialLoad])
+
+  // Initial places search after categories and brands are loaded
+  useEffect(() => {
+    if (isInitialLoad && categories.length > 0 && brands.length > 0 && mapRef.current && apiKey) {
+      const timeoutId = setTimeout(() => {
+        handleShowPlaces()
+        setIsInitialLoad(false)
+      }, 500) // Small delay to ensure everything is ready
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [categories, brands, isInitialLoad, apiKey])
 
   const loadInitialData = async () => {
     try {
@@ -159,7 +172,7 @@ export default function Home() {
       })
 
       setPlaces(placesData)
-      setPlaceCount(placesData.features.length)
+      setPlaceCount(placesData.length)
     } catch (error) {
       console.error('Failed to load places:', error)
       setError(`Failed to load places: ${getErrorMessage(error)}`)
@@ -185,23 +198,53 @@ export default function Home() {
     }
   }
 
-  const handlePlaceClick = (feature: any) => {
+  const handlePlaceClick = (place: Place) => {
+    console.log('Place clicked:', place)
     if (!mapRef.current) return
 
     // Remove existing popup
     if (popupRef.current) {
       popupRef.current.remove()
     }
-
     // Create new popup
-    const coordinates = feature.geometry.coordinates.slice()
+    const coordinates = place.geometry.coordinates as [number, number]
+    
+    // Extract the information we want to display
+    console.log('Place names object:', place.properties.names)
+    const placeName = place.properties.names?.primary || place.properties.ext_name || 'Unknown Place'
+    console.log('Extracted place name:', placeName)
+    const confidence = place.properties.confidence ? `${Math.round(place.properties.confidence * 100)}%` : 'N/A'
+    const category = place.properties.categories?.primary || 'N/A'
+    const brand = place.properties.brand?.names?.primary || 'N/A'
+    const address = place.properties.addresses?.[0]?.freeform || 
+                   `${place.properties.addresses?.[0]?.locality || ''} ${place.properties.addresses?.[0]?.region || ''}`.trim() || 
+                   'N/A'
+    
     const popupContent = `
-      <div class="p-4 text-gray-900">
-        <h3 class="font-semibold mb-2 text-gray-900">${feature.properties.names?.primary || feature.properties.ext_name||'Unknown Place'}</h3>
-        <textarea 
-          class="w-full h-32 p-2 border border-gray-300 rounded text-xs font-mono text-gray-900 bg-white" 
-          readonly
-        >${JSON.stringify(feature.properties, null, 2)}</textarea>
+      <div class="p-4 text-gray-900 min-w-128">
+        <h3 class="font-semibold mb-3 text-gray-900 text-lg">${placeName}</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-left">
+            <span class="font-medium text-gray-600">Confidence:&nbsp;</span>
+            <span class="text-gray-900">${confidence}</span>
+          </div>
+          <div class="flex justify-left">
+            <span class="font-medium text-gray-600">Category:&nbsp;</span>
+            <span class="text-gray-900"> ${category}</span>
+          </div>
+          <div class="flex justify-left">
+            <span class="font-medium text-gray-600">Brand:&nbsp;</span>
+            <span class="text-gray-900"> ${brand}</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-medium text-gray-600 mb-1">Address:</span>
+            <span class="text-gray-900 text-xs">${address}</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-medium text-gray-600 mb-1">GERS ID:</span>
+            <span class="text-gray-900 text-xs">${place.properties.id}</span>
+          </div>
+        </div>
       </div>
     `
 

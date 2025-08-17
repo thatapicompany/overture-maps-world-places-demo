@@ -16,12 +16,12 @@ export interface Category {
 
 export interface Brand {
   names: {
-    primary: string
+    primary?: string | null
     common?: Record<string, string>
     rules?: Array<{
       variant: string
       value: string
-    }>
+    }> | null
   }
   wikidata?: string | null
   counts?: {
@@ -46,15 +46,15 @@ export interface PlaceProperties {
     confidence?: number
   }>
   names: {
-    primary: string
+    primary?: string | null
     common?: any
     rules?: any
   }
-  categories: {
-    primary: string
+  categories?: {
+    primary?: string | null
     alternate?: string[]
-  }
-  confidence: number
+  } | null
+  confidence?: number
   websites?: string[]
   socials?: string[]
   emails?: string[]
@@ -79,7 +79,6 @@ export interface PlaceProperties {
 
 export interface Place {
   id: string
-  type: string
   geometry: PlaceGeometry
   properties: PlaceProperties
 }

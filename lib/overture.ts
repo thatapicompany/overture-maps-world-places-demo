@@ -14,7 +14,7 @@ import type {
 // Zod schemas for API response validation
 const CategorySchema = z.object({
   primary: z.string(),
-  ext_counts: z.object({
+  counts: z.object({
     places: z.number(),
     brands: z.number()
   })
@@ -22,12 +22,16 @@ const CategorySchema = z.object({
 
 const BrandSchema = z.object({
   names: z.object({
-    primary: z.string(),
-    common: z.record(z.string()).optional(),
+    primary: z.string().nullable(),
+    common: z.record(z.string()).nullable().optional(),
     rules: z.array(z.object({
       variant: z.string(),
       value: z.string()
-    })).optional()
+    })).nullable().optional()
+  }),
+
+  counts: z.object({
+    places: z.number(),
   })
 })
 
@@ -47,15 +51,15 @@ const PlacePropertiesSchema = z.object({
     confidence: z.number().optional()
   })),
   names: z.object({
-    primary: z.string(),
+    primary: z.string().nullable().optional(),
     common: z.any().nullable().optional(),
     rules: z.any().nullable().optional()
   }),
   categories: z.object({
-    primary: z.string(),
+    primary: z.string().nullable().optional(),
     alternate: z.array(z.string()).optional()
-  }),
-  confidence: z.number(),
+  }).nullable().optional(),
+  confidence: z.number().optional(),
   websites: z.array(z.string()).optional(),
   socials: z.array(z.string()).optional(),
   emails: z.array(z.string()).optional(),
@@ -80,14 +84,13 @@ const PlacePropertiesSchema = z.object({
 
 const PlaceSchema = z.object({
   id: z.string(),
-  type: z.string(),
   geometry: PlaceGeometrySchema,
   properties: PlacePropertiesSchema
 })
 
 const CountrySchema = z.object({
   country: z.string(),
-  ext_counts: z.object({
+  counts: z.object({
     places: z.number(),
     brands: z.number()
   })
@@ -191,6 +194,7 @@ class OvertureClient {
           // For Zod errors, try to return the raw data anyway for better UX
           // This allows the app to continue working even with minor validation issues
           console.warn('Attempting to use raw response data despite validation errors')
+          console.warn('Raw data:', data)
           return data as T
         }
         throw validationError
@@ -256,13 +260,13 @@ class OvertureClient {
 
   async getPlacesByCenter(
     apiKey: string,
-    params: Omit<GetPlacesParams, 'format'> & { format?: 'geojson' }
-  ): Promise<GeoJSON> {
-    const response = await this.makeRequest<GeoJSON>(
+    params: Omit<GetPlacesParams, 'format'> & { format?: 'json' | 'geojson' }
+  ): Promise<Place[]> {
+    const response = await this.makeRequest<Place[]>(
       API_ENDPOINTS.PLACES,
-      { ...params, format: 'geojson' },
+      { ...params, format: 'json' },
       apiKey,
-      GeoJSONSchema
+      z.array(PlaceSchema)
     )
     return response
   }

@@ -4,22 +4,26 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { DEFAULT_MAP_CENTER, STORAGE_KEYS } from '@/lib/config'
-import type { GeoJSON } from '@/lib/types'
+import type { Place } from '@/lib/types'
 
 export interface MapViewProps {
   onMapLoad: (map: maplibregl.Map) => void
   onMapMove: (center: { lat: number; lng: number }) => void
-  places: GeoJSON | null
-  onPlaceClick: (feature: any) => void
+  places: Place[] | null
+  onPlaceClick: (place: Place) => void
   showRadius?: boolean
   radius?: number
   center?: { lat: number; lng: number }
 }
 
 export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, showRadius, radius, center }: MapViewProps) {
+  const mapContainer = useRef<HTMLDivElement>(null)
+  const map = useRef<maplibregl.Map | null>(null)
+  const [isMapLoaded, setIsMapLoaded] = useState(false)
+
   // Show radius circle
   useEffect(() => {
-    if (!map.current || !radius || !center) return
+    if (!map.current || !isMapLoaded || !radius || !center) return
 
     const mapInstance = map.current
     // Remove previous radius layer/source if exists
@@ -61,7 +65,7 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       if (mapInstance.getLayer('radius-circle-outline')) mapInstance.removeLayer('radius-circle-outline')
       if (mapInstance.getSource('radius-circle')) mapInstance.removeSource('radius-circle')
     }
-  }, [radius, center])
+  }, [radius, center, isMapLoaded])
 
   // Helper to create a circle polygon as GeoJSON
   function createCircle(lng: number, lat: number, radiusMeters: number, points = 64) {
@@ -85,9 +89,6 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       properties: {}
     }
   }
-  const mapContainer = useRef<HTMLDivElement>(null)
-  const map = useRef<maplibregl.Map | null>(null)
-  const [isMapLoaded, setIsMapLoaded] = useState(false)
 
   // Initialize map
   useEffect(() => {
@@ -189,11 +190,22 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
     }
 
     // Add new places data if available
-    if (places && places.features.length > 0) {
+    if (places && places.length > 0) {
+      // Convert Place[] to GeoJSON format for map display
+      const geojson = {
+        type: 'FeatureCollection' as const,
+        features: places.map(place => ({
+          type: 'Feature' as const,
+          id: place.id,
+          geometry: place.geometry,
+          properties: place.properties
+        }))
+      }
+
       // Add GeoJSON source
       mapInstance.addSource('places', {
         type: 'geojson',
-        data: places
+        data: geojson
       })
 
       // Add circle layer for places
@@ -213,7 +225,12 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       // Add click handler for places
       mapInstance.on('click', 'places-layer', (e) => {
         if (e.features && e.features[0]) {
-          onPlaceClick(e.features[0])
+          // Find the original Place object from the clicked feature
+          const clickedFeature = e.features[0]
+          const originalPlace = places.find(p => p.id === clickedFeature.properties.id)
+          if (originalPlace) {
+            onPlaceClick(originalPlace)
+          }
         }
       })
 
