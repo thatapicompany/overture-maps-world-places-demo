@@ -250,7 +250,7 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       <div 
         ref={mapContainer} 
         className="w-full h-full"
-        style={{ height: 'calc(100vh - 120px)' }}
+        style={{ height: 'calc(100vh - 180px)' }}
       />
     </div>
   )

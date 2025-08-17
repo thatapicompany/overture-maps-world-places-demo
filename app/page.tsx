@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import TopBar from '@/components/TopBar'
 import MapView from '@/components/MapView'
+import Footer from '@/components/Footer'
 import { overtureClient } from '@/lib/overture'
 import { DEFAULT_API_KEY, DEFAULT_SEARCH_RADIUS, DEFAULT_RESULT_LIMIT, STORAGE_KEYS } from '@/lib/config'
 import type { Category, Brand, Place } from '@/lib/types'
@@ -330,7 +331,7 @@ export default function Home() {
       />
 
       {/* Map view */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-0">
         <MapView
           onMapLoad={handleMapLoad}
           onMapMove={handleMapMove}
@@ -340,6 +341,9 @@ export default function Home() {
           center={mapCenter}
         />
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }

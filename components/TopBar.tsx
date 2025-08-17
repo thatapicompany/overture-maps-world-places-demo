@@ -130,7 +130,14 @@ export default function TopBar({
           {/* API Key Input */}
           <div className="w-full lg:w-64">
             <label htmlFor="api-key" className="block text-sm font-medium text-gray-700 mb-1">
-              API Key
+              <a 
+                href="https://account.overturemapsapi.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                API Key
+              </a>
             </label>
             <input
               id="api-key"
