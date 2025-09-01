@@ -91,7 +91,7 @@ export default function TopBar({
   // Convert brands to select options
   const brandOptions: SelectOption[] = brands.map(brand => ({
     value: brand.names?.primary || "none",
-    label: `${brand.names.primary || "none"} (${brand?.counts?.places} places)`
+    label: `${brand.names?.primary || "none"} (${brand?.counts?.places} places)`
   }))
 
   // Handle API key changes with debouncing
