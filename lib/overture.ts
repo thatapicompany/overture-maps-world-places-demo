@@ -292,6 +292,40 @@ class OvertureClient {
     )
     return response
   }
+
+  // The endpoints below return theme-specific shapes; demos consume them
+  // loosely, so validate only that they're arrays/objects and pass through.
+  async getBuildings(
+    apiKey: string,
+    params: { lat: number; lng: number; radius?: number; limit?: number }
+  ): Promise<any[]> {
+    return this.makeRequest<any[]>(API_ENDPOINTS.BUILDINGS, { ...params, format: 'json' }, apiKey, z.array(z.any()))
+  }
+
+  async getDivisions(
+    apiKey: string,
+    params: { name?: string; country?: string; subtype?: string; admin_level?: string; bbox?: string; lat?: number; lng?: number; radius?: number; limit?: number; include_geometry?: boolean }
+  ): Promise<any[]> {
+    return this.makeRequest<any[]>(API_ENDPOINTS.DIVISIONS, { ...params, format: 'json' }, apiKey, z.array(z.any()))
+  }
+
+  async getDivisionById(apiKey: string, id: string): Promise<any> {
+    return this.makeRequest<any>(`${API_ENDPOINTS.DIVISIONS}/${encodeURIComponent(id)}`, {}, apiKey, z.any())
+  }
+
+  async getAddresses(
+    apiKey: string,
+    params: { lat: number; lng: number; radius?: number; limit?: number }
+  ): Promise<any[]> {
+    return this.makeRequest<any[]>(API_ENDPOINTS.ADDRESSES, { ...params, format: 'json' }, apiKey, z.array(z.any()))
+  }
+
+  async getTransportation(
+    apiKey: string,
+    params: { lat: number; lng: number; radius?: number; limit?: number }
+  ): Promise<any[]> {
+    return this.makeRequest<any[]>(API_ENDPOINTS.TRANSPORTATION, { ...params, format: 'json' }, apiKey, z.array(z.any()))
+  }
 }
 
 // Export singleton instance

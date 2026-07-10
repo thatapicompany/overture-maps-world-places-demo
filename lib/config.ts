@@ -22,4 +22,8 @@ export const API_ENDPOINTS = {
   BRANDS: '/places/brands',
   PLACES: '/places',
   COUNTRIES: '/places/countries',
+  BUILDINGS: '/buildings',
+  DIVISIONS: '/divisions',
+  ADDRESSES: '/addresses',
+  TRANSPORTATION: '/transportation',
 } as const
