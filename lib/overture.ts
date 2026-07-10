@@ -33,8 +33,14 @@ const BrandSchema = z.object({
   counts: z.object({
     places: z.number(),
     brands: z.number()
-  }).optional()
-})
+  }).optional(),
+  // Wikidata-sourced enrichment (CC0) — returned by default since API v0.2
+  ext_wikidata_label: z.string().nullable().optional(),
+  ext_logo_url: z.string().nullable().optional(),
+  ext_website: z.string().nullable().optional(),
+  ext_industry: z.string().nullable().optional(),
+  ext_parent: z.string().nullable().optional()
+}).passthrough() // Don't strip future additive API fields
 
 const PlaceGeometrySchema = z.object({
   type: z.string(),
@@ -49,8 +55,9 @@ const PlacePropertiesSchema = z.object({
     dataset: z.string(),
     record_id: z.string(),
     update_time: z.string().optional(),
-    confidence: z.number().optional()
-  })),
+    confidence: z.number().optional(),
+    license: z.string().nullable().optional()
+  }).passthrough()),
   names: z.object({
     primary: z.string().nullable().optional(),
     common: z.any().nullable().optional(),
@@ -60,6 +67,13 @@ const PlacePropertiesSchema = z.object({
     primary: z.string().nullable().optional(),
     alternate: z.array(z.string()).optional()
   }).nullable().optional(),
+  basic_category: z.string().nullable().optional(),
+  taxonomy: z.object({
+    primary: z.string().nullable().optional(),
+    hierarchy: z.array(z.string()).optional(),
+    alternates: z.array(z.string()).optional()
+  }).nullable().optional(),
+  operating_status: z.string().nullable().optional(),
   confidence: z.number().optional(),
   websites: z.array(z.string()).optional(),
   socials: z.array(z.string()).optional(),
@@ -80,7 +94,14 @@ const PlacePropertiesSchema = z.object({
     region: z.string().nullable().optional(),
     country: z.string().nullable().optional()
   })).optional(),
-  ext_name: z.string().optional()
+  ext_name: z.string().optional(),
+  ext_brand: z.object({
+    label: z.string().nullable().optional(),
+    logo_url: z.string().nullable().optional(),
+    website: z.string().nullable().optional(),
+    industry: z.string().nullable().optional(),
+    parent: z.string().nullable().optional()
+  }).optional()
 }).passthrough() // Allow additional properties that we haven't defined
 
 const PlaceSchema = z.object({

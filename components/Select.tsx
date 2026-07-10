@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from 'react'
 export interface SelectOption {
   value: string
   label: string
+  /** Optional small image (e.g. brand logo) rendered before the label */
+  logoUrl?: string | null
 }
 
 export interface SelectProps {
@@ -146,7 +148,15 @@ export default function Select({
         aria-haspopup="listbox"
         aria-disabled={disabled}
       >
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          {!multiple && selectedOptions[0]?.logoUrl && (
+            <img
+              src={selectedOptions[0].logoUrl}
+              alt=""
+              className="h-5 w-5 object-contain flex-shrink-0"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          )}
           <span className={`block truncate ${!selectedOptions.length ? 'text-gray-500' : 'text-gray-900'}`}>
             {displayValue}
           </span>
@@ -254,6 +264,15 @@ export default function Select({
                           checked={isSelected}
                           readOnly
                           className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                      )}
+                      {option.logoUrl && (
+                        <img
+                          src={option.logoUrl}
+                          alt=""
+                          className="mr-2 h-5 w-5 object-contain flex-shrink-0"
+                          loading="lazy"
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                         />
                       )}
                       <span className="block whitespace-nowrap">{option.label}</span>

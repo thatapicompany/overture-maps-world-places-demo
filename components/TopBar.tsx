@@ -88,10 +88,11 @@ export default function TopBar({
 
   //console.log('Category options:', categoryOptions)
 
-  // Convert brands to select options
+  // Convert brands to select options, with Wikidata-sourced logos where available
   const brandOptions: SelectOption[] = brands.map(brand => ({
     value: brand.names?.primary || "none",
-    label: `${brand.names?.primary || "none"} (${brand?.counts?.places} places)`
+    label: `${brand.names?.primary || "none"} (${brand?.counts?.places} places)`,
+    logoUrl: brand.ext_logo_url ? `${brand.ext_logo_url}?width=40` : undefined
   }))
 
   // Handle API key changes with debouncing

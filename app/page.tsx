@@ -169,7 +169,9 @@ export default function Home() {
         radius,
         limit,
         categories: selectedCategories?.length > 0 ? selectedCategories.join(',') : undefined,
-        brand_name: selectedBrand || undefined
+        brand_name: selectedBrand || undefined,
+        // Opt in to Wikidata-sourced brand details (logo, website, industry)
+        enrichment_fields: 'brand'
       })
 
       setPlaces(placesData)
@@ -217,26 +219,53 @@ export default function Home() {
     const confidence = place.properties.confidence ? `${Math.round(place.properties.confidence * 100)}%` : 'N/A'
     const category = place.properties.categories?.primary || 'N/A'
     const brand = place.properties.brand?.names?.primary || 'N/A'
-    const address = place.properties.addresses?.[0]?.freeform || 
-                   `${place.properties.addresses?.[0]?.locality || ''} ${place.properties.addresses?.[0]?.region || ''}`.trim() || 
+    const address = place.properties.addresses?.[0]?.freeform ||
+                   `${place.properties.addresses?.[0]?.locality || ''} ${place.properties.addresses?.[0]?.region || ''}`.trim() ||
                    'N/A'
-    
+    const operatingStatus = place.properties.operating_status
+    const taxonomyPath = place.properties.taxonomy?.hierarchy?.join(' › ')
+    const extBrand = place.properties.ext_brand
+    const brandLogo = extBrand?.logo_url ? `${extBrand.logo_url}?width=80` : null
+
     const popupContent = `
       <div class="p-4 text-gray-900 min-w-128">
-        <h3 class="font-semibold mb-3 text-gray-900 text-lg">${placeName}</h3>
+        <div class="flex items-center gap-3 mb-3">
+          ${brandLogo ? `<img src="${brandLogo}" alt="${extBrand?.label || brand} logo" class="h-8 max-w-[80px] object-contain" onerror="this.style.display='none'" />` : ''}
+          <h3 class="font-semibold text-gray-900 text-lg">${placeName}</h3>
+        </div>
         <div class="space-y-2 text-sm">
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Confidence:&nbsp;</span>
             <span class="text-gray-900">${confidence}</span>
           </div>
+          ${operatingStatus ? `
+          <div class="flex justify-left">
+            <span class="font-medium text-gray-600">Status:&nbsp;</span>
+            <span class="${operatingStatus === 'open' ? 'text-green-700' : 'text-red-700'}">${operatingStatus.replace(/_/g, ' ')}</span>
+          </div>` : ''}
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Category:&nbsp;</span>
             <span class="text-gray-900"> ${category}</span>
           </div>
+          ${taxonomyPath ? `
+          <div class="flex justify-left">
+            <span class="font-medium text-gray-600">Taxonomy:&nbsp;</span>
+            <span class="text-gray-500 text-xs">${taxonomyPath}</span>
+          </div>` : ''}
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Brand:&nbsp;</span>
             <span class="text-gray-900"> ${brand}</span>
           </div>
+          ${extBrand?.website ? `
+          <div class="flex justify-left">
+            <span class="font-medium text-gray-600">Brand site:&nbsp;</span>
+            <a href="${extBrand.website}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-xs">${extBrand.website}</a>
+          </div>` : ''}
+          ${extBrand?.parent ? `
+          <div class="flex justify-left">
+            <span class="font-medium text-gray-600">Parent:&nbsp;</span>
+            <span class="text-gray-900">${extBrand.parent}</span>
+          </div>` : ''}
           <div class="flex flex-col">
             <span class="font-medium text-gray-600 mb-1">Address:</span>
             <span class="text-gray-900 text-xs">${address}</span>

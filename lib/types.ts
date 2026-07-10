@@ -28,6 +28,12 @@ export interface Brand {
     places: number
     brands: number
   }
+  // Wikidata-sourced enrichment (CC0), returned by default on /places/brands
+  ext_wikidata_label?: string | null
+  ext_logo_url?: string | null
+  ext_website?: string | null
+  ext_industry?: string | null
+  ext_parent?: string | null
 }
 
 export interface PlaceGeometry {
@@ -54,6 +60,14 @@ export interface PlaceProperties {
     primary?: string | null
     alternate?: string[]
   } | null
+  // Overture places taxonomy (schema v1.15+)
+  basic_category?: string | null
+  taxonomy?: {
+    primary?: string | null
+    hierarchy?: string[]
+    alternates?: string[]
+  } | null
+  operating_status?: string | null
   confidence?: number
   websites?: string[]
   socials?: string[]
@@ -75,6 +89,14 @@ export interface PlaceProperties {
     country?: string | null
   }>
   ext_name?: string
+  // Wikidata-sourced brand enrichment (CC0), present when enrichment_fields=brand
+  ext_brand?: {
+    label?: string | null
+    logo_url?: string | null
+    website?: string | null
+    industry?: string | null
+    parent?: string | null
+  }
 }
 
 export interface Place {
@@ -111,6 +133,9 @@ export interface GetPlacesParams {
   brand_name?: string
   min_confidence?: number
   categories?: string
+  taxonomy?: string
+  operating_status?: string
+  enrichment_fields?: string
 }
 
 export interface GetBrandsParams {
