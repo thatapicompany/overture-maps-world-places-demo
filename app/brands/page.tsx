@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import DemoMap from '@/components/DemoMap'
 import Footer from '@/components/Footer'
 import { overtureClient } from '@/lib/overture'

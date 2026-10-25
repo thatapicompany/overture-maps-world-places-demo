@@ -43,7 +43,7 @@ const BrandSchema = z.object({
 }).passthrough() // Don't strip future additive API fields
 
 const PlaceGeometrySchema = z.object({
-  type: z.string(),
+  type: z.literal('Point'),
   coordinates: z.tuple([z.number(), z.number()])
 })
 

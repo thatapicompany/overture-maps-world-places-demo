@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { DEFAULT_MAP_CENTER, STORAGE_KEYS } from '@/lib/config'
 import type { Place } from '@/lib/types'
@@ -81,9 +81,9 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       coords.push([newLng, newLat])
     }
     return {
-      type: 'Feature',
+      type: 'Feature' as const,
       geometry: {
-        type: 'Polygon',
+        type: 'Polygon' as const,
         coordinates: [coords]
       },
       properties: {}
@@ -135,7 +135,6 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       },
       center: [initialViewport.lng, initialViewport.lat],
       zoom: initialViewport.zoom,
-      attributionControl: true
     })
 
     // Add navigation controls
@@ -223,7 +222,7 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       })
 
       // Add click handler for places
-      mapInstance.on('click', 'places-layer', (e) => {
+      mapInstance.on('click', 'places-layer', (e: maplibregl.MapLayerMouseEvent) => {
         if (e.features && e.features[0]) {
           // Find the original Place object from the clicked feature
           const clickedFeature = e.features[0]

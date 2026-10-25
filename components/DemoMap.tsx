@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 export interface DemoMapProps {
@@ -43,7 +43,6 @@ export default function DemoMap({ center, zoom = 14, pitch = 0, onReady, onMoveE
       center: [center.lng, center.lat],
       zoom,
       pitch,
-      attributionControl: true,
     })
     mapRef.current = map
     map.addControl(new maplibregl.NavigationControl(), 'top-right')

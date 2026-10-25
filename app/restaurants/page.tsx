@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import DemoMap from '@/components/DemoMap'
 import Select from '@/components/Select'
 import Footer from '@/components/Footer'
@@ -91,7 +91,7 @@ export default function RestaurantsDemo() {
         'circle-opacity': 0.85,
       },
     })
-    map.on('click', 'food-layer', (e) => {
+    map.on('click', 'food-layer', (e: maplibregl.MapLayerMouseEvent) => {
       const f = e.features?.[0]
       if (!f) return
       const props: any = f.properties

@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import DemoMap from '@/components/DemoMap'
 import Footer from '@/components/Footer'
 import { overtureClient } from '@/lib/overture'
@@ -112,7 +112,7 @@ export default function SiteSelectionDemo() {
             heightOffset={190}
             onReady={(map) => {
               mapRef.current = map
-              map.on('click', (e) => handleMapClick(map, e, radiusRef.current))
+              map.on('click', (e: maplibregl.MapMouseEvent) => handleMapClick(map, e, radiusRef.current))
             }}
           />
         </div>
