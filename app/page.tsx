@@ -7,7 +7,7 @@ import Footer from '@/components/Footer'
 import { overtureClient } from '@/lib/overture'
 import { DEFAULT_API_KEY, DEFAULT_SEARCH_RADIUS, DEFAULT_RESULT_LIMIT, STORAGE_KEYS } from '@/lib/config'
 import type { Category, Brand, Place } from '@/lib/types'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 
 export default function Home() {
   // State management

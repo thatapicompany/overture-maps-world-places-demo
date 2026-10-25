@@ -37,7 +37,7 @@ export interface Brand {
 }
 
 export interface PlaceGeometry {
-  type: string
+  type: 'Point'
   coordinates: [number, number]
 }
 

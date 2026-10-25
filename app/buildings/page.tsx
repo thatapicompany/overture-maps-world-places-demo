@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useRef, useState } from 'react'
-import maplibregl from 'maplibre-gl'
+import * as maplibregl from 'maplibre-gl'
 import DemoMap from '@/components/DemoMap'
 import Footer from '@/components/Footer'
 import { overtureClient } from '@/lib/overture'
@@ -60,7 +60,7 @@ export default function BuildingsDemo() {
           'fill-extrusion-opacity': 0.85,
         },
       })
-      map.on('click', 'buildings-3d', (e) => {
+      map.on('click', 'buildings-3d', (e: maplibregl.MapLayerMouseEvent) => {
         const f = e.features?.[0]
         if (!f) return
         const p: any = f.properties
