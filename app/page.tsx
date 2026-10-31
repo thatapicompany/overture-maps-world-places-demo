@@ -6,6 +6,7 @@ import MapView from '@/components/MapView'
 import Footer from '@/components/Footer'
 import { overtureClient, type RequestInfo } from '@/lib/overture'
 import ApiCallBar from '@/components/ApiCallBar'
+import { fitMapToPlaces } from '@/lib/fit-to-places'
 import { DEFAULT_API_KEY, DEFAULT_SEARCH_RADIUS, DEFAULT_RESULT_LIMIT, STORAGE_KEYS, isDemoKey } from '@/lib/config'
 import type { Category, Brand, Place } from '@/lib/types'
 import * as maplibregl from 'maplibre-gl'
@@ -25,7 +26,12 @@ export default function Home() {
   const [radius, setRadius] = useState(2000)
   const [limit, setLimit] = useState(DEFAULT_RESULT_LIMIT)
   const [autoSearch, setAutoSearch] = useState(true)
+  // Auto-search follows the user's own pans and zooms, not moves made in code
+  // (fitting to results), which would otherwise spend another request
+  const lastMoveByUserRef = useRef(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  // State, not just the ref, so effects waiting on the map re-run once it loads
+  const [isMapReady, setIsMapReady] = useState(false)
   const [lastRequest, setLastRequest] = useState<RequestInfo | null>(null)
   
   // Refs
@@ -97,6 +103,7 @@ export default function Home() {
 
   // Auto-search when map moves (if enabled)
   useEffect(() => {
+    if (!lastMoveByUserRef.current) return
     if (autoSearch && mapRef.current && apiKey && !isInitialLoad) {
       const timeoutId = setTimeout(() => {
         handleShowPlaces()
@@ -108,7 +115,7 @@ export default function Home() {
 
   // Initial places search after categories and brands are loaded
   useEffect(() => {
-    if (isInitialLoad && categories.length > 0 && brands.length > 0 && mapRef.current && apiKey) {
+    if (isInitialLoad && categories.length > 0 && brands.length > 0 && isMapReady && apiKey) {
       const timeoutId = setTimeout(() => {
         handleShowPlaces()
         setIsInitialLoad(false)
@@ -116,7 +123,7 @@ export default function Home() {
       
       return () => clearTimeout(timeoutId)
     }
-  }, [categories, brands, isInitialLoad, apiKey])
+  }, [categories, brands, isInitialLoad, isMapReady, apiKey])
 
   const loadInitialData = async () => {
     try {
@@ -175,7 +182,7 @@ export default function Home() {
     }
   }
 
-  const handleShowPlaces = async () => {
+  const handleShowPlaces = async ({ fitToResults = false }: { fitToResults?: boolean } = {}) => {
     if (!mapRef.current) return
 
     try {
@@ -196,6 +203,10 @@ export default function Home() {
 
       setPlaces(placesData)
       setPlaceCount(placesData.length)
+      // Only when the user asked for this search: zoom so every pin is in view
+      if (fitToResults && mapRef.current) {
+        fitMapToPlaces(mapRef.current, placesData)
+      }
     } catch (error) {
       console.error('Failed to load places:', error)
       setError(`Failed to load places: ${getErrorMessage(error)}`)
@@ -306,9 +317,11 @@ export default function Home() {
 
   const handleMapLoad = useCallback((map: maplibregl.Map) => {
     mapRef.current = map
+    setIsMapReady(true)
   }, [])
 
-  const handleMapMove = useCallback((center: { lat: number; lng: number }) => {
+  const handleMapMove = useCallback((center: { lat: number; lng: number }, byUser: boolean) => {
+    lastMoveByUserRef.current = byUser
     setMapCenter(center)
   }, [])
 
@@ -375,7 +388,7 @@ export default function Home() {
         onAutoSearchChange={setAutoSearch}
         quotaRemaining={lastRequest?.quotaRemaining ?? null}
         quotaLimit={lastRequest?.quotaLimit ?? null}
-        onShowPlaces={handleShowPlaces}
+        onShowPlaces={() => handleShowPlaces({ fitToResults: true })}
         placeCount={placeCount}
         onClearResults={handleClearResults}
         isLoading={isLoading}

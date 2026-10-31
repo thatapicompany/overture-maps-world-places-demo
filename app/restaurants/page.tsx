@@ -6,6 +6,7 @@ import DemoMap from '@/components/DemoMap'
 import Select from '@/components/Select'
 import Footer from '@/components/Footer'
 import { overtureClient } from '@/lib/overture'
+import { fitMapToPlaces } from '@/lib/fit-to-places'
 import { useApiKey, getErrorMessage } from '@/lib/demo-shared'
 import type { Place } from '@/lib/types'
 
@@ -50,6 +51,7 @@ export default function RestaurantsDemo() {
       })
       setCount(places.length)
       renderPlaces(map, places)
+      fitMapToPlaces(map, places)
     } catch (e) {
       setError(getErrorMessage(e))
     } finally {
