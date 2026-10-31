@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import TopBar from '@/components/TopBar'
 import MapView from '@/components/MapView'
 import Footer from '@/components/Footer'
-import { overtureClient } from '@/lib/overture'
-import { DEFAULT_API_KEY, DEFAULT_SEARCH_RADIUS, DEFAULT_RESULT_LIMIT, STORAGE_KEYS } from '@/lib/config'
+import { overtureClient, type RequestInfo } from '@/lib/overture'
+import ApiCallBar from '@/components/ApiCallBar'
+import { DEFAULT_API_KEY, DEFAULT_SEARCH_RADIUS, DEFAULT_RESULT_LIMIT, STORAGE_KEYS, isDemoKey } from '@/lib/config'
 import type { Category, Brand, Place } from '@/lib/types'
 import * as maplibregl from 'maplibre-gl'
 
@@ -25,9 +26,12 @@ export default function Home() {
   const [limit, setLimit] = useState(DEFAULT_RESULT_LIMIT)
   const [autoSearch, setAutoSearch] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [lastRequest, setLastRequest] = useState<RequestInfo | null>(null)
   
   // Refs
   const mapRef = useRef<maplibregl.Map | null>(null)
+  // Where (and for which key and radius) the category list was last loaded.
+  const categoriesLoadedFor = useRef<{ lat: number; lng: number; radius: number; apiKey: string } | null>(null)
   const popupRef = useRef<maplibregl.Popup | null>(null)
 
   // Helper function to extract error message
@@ -61,12 +65,28 @@ export default function Home() {
     loadInitialData()
   }, [])
 
-  // Load categories when API key or map center changes
+  // Track the latest API call and quota headers for the API-call bar
+  useEffect(() => overtureClient.onRequest((info) => {
+    if (info.url.includes('/places?')) setLastRequest(info)
+  }), [])
+
+  // A personal key pays for every request, so don't search on every map
+  // move by default; the demo key is free, so keep auto-search on for it.
   useEffect(() => {
-    if (apiKey && mapCenter) {
+    setAutoSearch(isDemoKey(apiKey))
+  }, [apiKey])
+
+  // Reload the category list only when the map has moved more than half
+  // the search radius, or the key or radius changed. Small pans reuse it.
+  useEffect(() => {
+    if (!apiKey || !mapCenter) return
+    const last = categoriesLoadedFor.current
+    const moved = last ? distanceMeters(last, mapCenter) : Infinity
+    if (!last || last.apiKey !== apiKey || last.radius !== radius || moved > radius / 2) {
+      categoriesLoadedFor.current = { ...mapCenter, radius, apiKey }
       loadCategories()
     }
-  }, [apiKey, mapCenter])
+  }, [apiKey, mapCenter, radius])
 
   // Load brands when selected categories change
   useEffect(() => {
@@ -353,11 +373,15 @@ export default function Home() {
         onLimitChange={handleLimitChange}
         autoSearch={autoSearch}
         onAutoSearchChange={setAutoSearch}
+        quotaRemaining={lastRequest?.quotaRemaining ?? null}
+        quotaLimit={lastRequest?.quotaLimit ?? null}
         onShowPlaces={handleShowPlaces}
         placeCount={placeCount}
         onClearResults={handleClearResults}
         isLoading={isLoading}
       />
+
+      <ApiCallBar request={lastRequest} isDemo={isDemoKey(apiKey)} />
 
       {/* Map view */}
       <div className="flex-1 relative min-h-0">
@@ -375,4 +399,14 @@ export default function Home() {
       <Footer />
     </div>
   )
+}
+
+/** Great-circle distance in metres between two points. */
+function distanceMeters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6_371_000
+  const toRad = (d: number) => (d * Math.PI) / 180
+  const dLat = toRad(b.lat - a.lat)
+  const dLng = toRad(b.lng - a.lng)
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2
+  return 2 * R * Math.asin(Math.sqrt(h))
 }
