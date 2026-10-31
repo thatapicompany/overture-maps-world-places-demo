@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import '@/lib/maplibre-worker'
 
 export interface DemoMapProps {
   center: { lat: number; lng: number }
