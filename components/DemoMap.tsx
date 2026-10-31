@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '@/lib/maplibre-worker'
+import { BASE_MAP_STYLE } from '@/lib/map-style'
 
 export interface DemoMapProps {
   center: { lat: number; lng: number }
@@ -29,18 +30,7 @@ export default function DemoMap({ center, zoom = 14, pitch = 0, onReady, onMoveE
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors',
-          },
-        },
-        layers: [{ id: 'osm-tiles', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 22 }],
-      },
+      style: BASE_MAP_STYLE,
       center: [center.lng, center.lat],
       zoom,
       pitch,

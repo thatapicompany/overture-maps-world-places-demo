@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '@/lib/maplibre-worker'
+import { BASE_MAP_STYLE, addPinLayer, removePinLayer } from '@/lib/map-style'
 import { DEFAULT_MAP_CENTER, STORAGE_KEYS } from '@/lib/config'
 import type { Place } from '@/lib/types'
 
@@ -115,26 +116,7 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
     // Initialize MapLibre GL JS map
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: {
-        version: 8,
-        sources: {
-          'osm': {
-            type: 'raster',
-            tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-            tileSize: 256,
-            attribution: '© OpenStreetMap contributors'
-          }
-        },
-        layers: [
-          {
-            id: 'osm-tiles',
-            type: 'raster',
-            source: 'osm',
-            minzoom: 0,
-            maxzoom: 22
-          }
-        ]
-      },
+      style: BASE_MAP_STYLE,
       center: [initialViewport.lng, initialViewport.lat],
       zoom: initialViewport.zoom,
     })
@@ -187,7 +169,7 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
 
     // Remove existing places source and layer if they exist
     if (mapInstance.getSource('places')) {
-      mapInstance.removeLayer('places-layer')
+      removePinLayer(mapInstance, 'places-layer')
       mapInstance.removeSource('places')
     }
 
@@ -211,18 +193,7 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
       })
 
       // Add circle layer for places
-      mapInstance.addLayer({
-        id: 'places-layer',
-        type: 'circle',
-        source: 'places',
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#3B82F6',
-          'circle-stroke-color': '#FFFFFF',
-          'circle-stroke-width': 2,
-          'circle-opacity': 0.8
-        }
-      })
+      addPinLayer(mapInstance, 'places-layer', 'places', '#2563EB')
 
       // Add click handler for places
       mapInstance.on('click', 'places-layer', (e: maplibregl.MapLayerMouseEvent) => {

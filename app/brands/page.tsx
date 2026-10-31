@@ -5,6 +5,8 @@ import * as maplibregl from 'maplibre-gl'
 import DemoMap from '@/components/DemoMap'
 import Footer from '@/components/Footer'
 import { overtureClient } from '@/lib/overture'
+import { fitMapToPlaces } from '@/lib/fit-to-places'
+import { addPinLayer, removePinLayer } from '@/lib/map-style'
 import { useApiKey, getErrorMessage } from '@/lib/demo-shared'
 import type { Brand } from '@/lib/types'
 
@@ -16,36 +18,20 @@ export default function BrandsDemo() {
   const [error, setError] = useState<string | null>(null)
   const [placeCount, setPlaceCount] = useState<number | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
-
-  const loadBrands = useCallback(async () => {
-    const map = mapRef.current
-    if (!map) return
-    setIsLoading(true)
-    setError(null)
-    try {
-      const c = map.getCenter()
-      const data = await overtureClient.getBrands(apiKey, { lat: c.lat, lng: c.lng, radius: 2000 })
-      // Brands with Wikidata enrichment first, then by place count
-      data.sort((a: any, b: any) => {
-        const aScore = (a.ext_logo_url ? 1e9 : 0) + (a.counts?.places || 0)
-        const bScore = (b.ext_logo_url ? 1e9 : 0) + (b.counts?.places || 0)
-        return bScore - aScore
-      })
-      setBrands(data)
-    } catch (e) {
-      setError(getErrorMessage(e))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [apiKey])
+  // Read inside async callbacks, where the selected state could be stale
+  const selectedRef = useRef<Brand | null>(null)
+  // Where the brand list was loaded. Brand searches use this, not the current
+  // map centre, so zooming to one brand's pins doesn't shift the next search.
+  const listCentreRef = useRef<{ lat: number; lng: number } | null>(null)
 
   const showBrandPlaces = useCallback(async (brand: Brand) => {
     const map = mapRef.current
     if (!map) return
     setSelected(brand)
+    selectedRef.current = brand
     setPlaceCount(null)
     try {
-      const c = map.getCenter()
+      const c = listCentreRef.current ?? map.getCenter()
       const places = await overtureClient.getPlacesByCenter(apiKey, {
         lat: c.lat,
         lng: c.lng,
@@ -55,7 +41,7 @@ export default function BrandsDemo() {
         brand_name: brand.wikidata ? undefined : brand.names?.primary || undefined,
       })
       setPlaceCount(places.length)
-      if (map.getLayer('brand-places-layer')) map.removeLayer('brand-places-layer')
+      removePinLayer(map, 'brand-places-layer')
       if (map.getSource('brand-places')) map.removeSource('brand-places')
       map.addSource('brand-places', {
         type: 'geojson',
@@ -68,21 +54,38 @@ export default function BrandsDemo() {
           })),
         },
       })
-      map.addLayer({
-        id: 'brand-places-layer',
-        type: 'circle',
-        source: 'brand-places',
-        paint: {
-          'circle-radius': 8,
-          'circle-color': '#7C3AED',
-          'circle-stroke-color': '#FFFFFF',
-          'circle-stroke-width': 2,
-        },
-      })
+      addPinLayer(map, 'brand-places-layer', 'brand-places', '#7C3AED')
+      fitMapToPlaces(map, places)
     } catch (e) {
       setError(getErrorMessage(e))
     }
   }, [apiKey])
+
+  const loadBrands = useCallback(async () => {
+    const map = mapRef.current
+    if (!map) return
+    setIsLoading(true)
+    setError(null)
+    try {
+      const c = map.getCenter()
+      listCentreRef.current = { lat: c.lat, lng: c.lng }
+      const data = await overtureClient.getBrands(apiKey, { lat: c.lat, lng: c.lng, radius: 2000 })
+      // Brands with Wikidata enrichment first, then by place count
+      data.sort((a: any, b: any) => {
+        const aScore = (a.ext_logo_url ? 1e9 : 0) + (a.counts?.places || 0)
+        const bScore = (b.ext_logo_url ? 1e9 : 0) + (b.counts?.places || 0)
+        return bScore - aScore
+      })
+      setBrands(data)
+      // Show something on the map straight away: pick the top brand if the
+      // user hasn't chosen one
+      if (!selectedRef.current && data.length > 0) showBrandPlaces(data[0])
+    } catch (e) {
+      setError(getErrorMessage(e))
+    } finally {
+      setIsLoading(false)
+    }
+  }, [apiKey, showBrandPlaces])
 
   return (
     <div className="min-h-screen flex flex-col">
