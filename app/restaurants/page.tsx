@@ -7,6 +7,7 @@ import Select from '@/components/Select'
 import Footer from '@/components/Footer'
 import { overtureClient } from '@/lib/overture'
 import { fitMapToPlaces } from '@/lib/fit-to-places'
+import { addPinLayer, removePinLayer } from '@/lib/map-style'
 import { useApiKey, getErrorMessage } from '@/lib/demo-shared'
 import type { Place } from '@/lib/types'
 
@@ -60,7 +61,7 @@ export default function RestaurantsDemo() {
   }, [apiKey])
 
   const renderPlaces = (map: maplibregl.Map, places: Place[]) => {
-    if (map.getLayer('food-layer')) map.removeLayer('food-layer')
+    removePinLayer(map, 'food-layer')
     if (map.getSource('food')) map.removeSource('food')
     map.addSource('food', {
       type: 'geojson',
@@ -81,18 +82,8 @@ export default function RestaurantsDemo() {
         })),
       },
     })
-    map.addLayer({
-      id: 'food-layer',
-      type: 'circle',
-      source: 'food',
-      paint: {
-        'circle-radius': 7,
-        'circle-color': ['case', ['==', ['get', 'status'], 'open'], '#16A34A', '#F59E0B'],
-        'circle-stroke-color': '#FFFFFF',
-        'circle-stroke-width': 2,
-        'circle-opacity': 0.85,
-      },
-    })
+    // Open: green. Closed or unknown status: orange
+    addPinLayer(map, 'food-layer', 'food', ['case', ['==', ['get', 'status'], 'open'], '#15803D', '#EA580C'])
     map.on('click', 'food-layer', (e: maplibregl.MapLayerMouseEvent) => {
       const f = e.features?.[0]
       if (!f) return
