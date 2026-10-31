@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { OVERTURE_API_BASE, API_ENDPOINTS } from './config'
+import { OVERTURE_API_BASE, API_ENDPOINTS, RESPONSE_CACHE_TTL_MS } from './config'
 import type { 
   Category, 
   Brand, 
@@ -141,7 +141,36 @@ class OvertureAPIError extends Error {
   }
 }
 
+/** What the explorer shows about the most recent request: the call itself and the plan headers. */
+export interface RequestInfo {
+  /** Full request URL, without the API key (keys travel in the x-api-key header). */
+  url: string
+  fromCache: boolean
+  quotaRemaining: number | null
+  quotaLimit: number | null
+}
+
+type RequestListener = (info: RequestInfo) => void
+
+// Coordinates are rounded to 3 decimal places (about 100 m) so small pans
+// reuse cached responses here and on the API side.
+const roundCoord = (key: string, value: unknown): unknown =>
+  (key === 'lat' || key === 'lng') && typeof value === 'number' ? Math.round(value * 1000) / 1000 : value
+
 class OvertureClient {
+  private cache = new Map<string, { at: number; data: unknown; quotaRemaining: number | null; quotaLimit: number | null }>()
+  private listeners = new Set<RequestListener>()
+
+  /** Subscribe to request events; returns an unsubscribe function. */
+  onRequest(listener: RequestListener): () => void {
+    this.listeners.add(listener)
+    return () => { this.listeners.delete(listener) }
+  }
+
+  private emit(info: RequestInfo) {
+    this.listeners.forEach((l) => l(info))
+  }
+
   private baseUrl: string
 
   constructor(baseUrl: string = OVERTURE_API_BASE) {
@@ -157,7 +186,8 @@ class OvertureClient {
     const url = new URL(endpoint, this.baseUrl)
     
     // Add query parameters
-    Object.entries(params).forEach(([key, value]) => {
+    Object.entries(params).forEach(([key, raw]) => {
+      const value = roundCoord(key, raw)
       if (value !== undefined && value !== null) {
         if (Array.isArray(value)) {
           url.searchParams.set(key, value.join(','))
@@ -166,6 +196,17 @@ class OvertureClient {
         }
       }
     })
+
+    // Serve repeats from memory: on a personal key every API call counts
+    // towards the monthly allowance, so exploring the same area twice
+    // should not cost twice. The key is part of the cache key so switching
+    // keys never shows another key's results.
+    const cacheKey = `${apiKey}|${url.toString()}`
+    const cached = this.cache.get(cacheKey)
+    if (cached && Date.now() - cached.at < RESPONSE_CACHE_TTL_MS) {
+      this.emit({ url: url.toString(), fromCache: true, quotaRemaining: cached.quotaRemaining, quotaLimit: cached.quotaLimit })
+      return cached.data as T
+    }
 
     const startTime = Date.now()
     
@@ -205,6 +246,15 @@ class OvertureClient {
       }
 
       const data = await response.json()
+
+      const num = (h: string) => {
+        const v = response.headers.get(h)
+        return v === null || v === '' || Number.isNaN(Number(v)) ? null : Number(v)
+      }
+      const quotaRemaining = num('X-Quota-Remaining')
+      const quotaLimit = num('X-Quota-Limit')
+      this.cache.set(cacheKey, { at: Date.now(), data, quotaRemaining, quotaLimit })
+      this.emit({ url: url.toString(), fromCache: false, quotaRemaining, quotaLimit })
       
       try {
         // Validate response with Zod

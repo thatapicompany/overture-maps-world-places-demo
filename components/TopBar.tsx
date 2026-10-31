@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Select, { SelectOption } from './Select'
-import { STORAGE_KEYS, DEFAULT_API_KEY } from '@/lib/config'
+import { STORAGE_KEYS, DEFAULT_API_KEY, isDemoKey } from '@/lib/config'
 import type { Category, Brand } from '@/lib/types'
 
 export interface TopBarProps {
@@ -20,6 +20,8 @@ export interface TopBarProps {
   onLimitChange: (limit: number) => void
   autoSearch: boolean
   onAutoSearchChange: (autoSearch: boolean) => void
+  quotaRemaining?: number | null
+  quotaLimit?: number | null
   placeCount: number
   onShowPlaces: () => void
   onClearResults: () => void
@@ -44,7 +46,9 @@ export default function TopBar({
   limit,
   onLimitChange,
   autoSearch,
-  onAutoSearchChange
+  onAutoSearchChange,
+  quotaRemaining = null,
+  quotaLimit = null,
 }: TopBarProps) {
   const [localRadius, setLocalRadius] = useState(radius)
   const [localLimit, setLocalLimit] = useState(limit)
@@ -148,6 +152,19 @@ export default function TopBar({
               placeholder={DEFAULT_API_KEY}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
             />
+            <p className="mt-1 text-xs text-gray-500">
+              {isDemoKey(apiKey) ? (
+                <>Free demo key: works near New York, London, Paris and Sydney.</>
+              ) : (
+                <>
+                  Your key: each search uses one request from your plan
+                  {quotaRemaining !== null && quotaLimit !== null
+                    ? ` (${quotaRemaining.toLocaleString('en-GB')} of ${quotaLimit.toLocaleString('en-GB')} left this month)`
+                    : ''}
+                  . Repeat searches are free.
+                </>
+              )}
+            </p>
           </div>
 
           {/* Categories Select */}

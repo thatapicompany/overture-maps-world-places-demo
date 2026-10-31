@@ -8,6 +8,13 @@ export const DEFAULT_SEARCH_RADIUS = 1500 // meters
 export const DEFAULT_RESULT_LIMIT = 200
 export const MAP_MOVE_DEBOUNCE_MS = 400
 
+/** Identical requests within this window are served from memory, not the API. */
+export const RESPONSE_CACHE_TTL_MS = 10 * 60 * 1000
+
+/** The public demo key: free, but only near the demo cities. */
+export const isDemoKey = (key: string | null | undefined): boolean =>
+  !key || key.trim() === '' || key.trim() === DEFAULT_API_KEY
+
 // LocalStorage keys
 export const STORAGE_KEYS = {
   API_KEY: 'overture_api_key',
