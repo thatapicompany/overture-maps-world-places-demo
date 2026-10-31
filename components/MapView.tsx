@@ -9,7 +9,8 @@ import type { Place } from '@/lib/types'
 
 export interface MapViewProps {
   onMapLoad: (map: maplibregl.Map) => void
-  onMapMove: (center: { lat: number; lng: number }) => void
+  /** byUser is false for moves made in code, e.g. fitting the map to results */
+  onMapMove: (center: { lat: number; lng: number }, byUser: boolean) => void
   places: Place[] | null
   onPlaceClick: (place: Place) => void
   showRadius?: boolean
@@ -149,11 +150,12 @@ export default function MapView({ onMapLoad, onMapMove, places, onPlaceClick, sh
 
     // Handle map move with debouncing
     let moveTimeout: NodeJS.Timeout
-    map.current.on('moveend', () => {
+    map.current.on('moveend', (e) => {
       if (!map.current) return
 
       const center = map.current.getCenter()
-      onMapMove({ lat: center.lat, lng: center.lng })
+      // MapLibre only sets originalEvent when a drag, scroll or tap caused the move
+      onMapMove({ lat: center.lat, lng: center.lng }, Boolean(e.originalEvent))
 
       // Save viewport to localStorage
       try {
