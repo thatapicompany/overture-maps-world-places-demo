@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import '@/lib/maplibre-worker'
 import { DEFAULT_MAP_CENTER, STORAGE_KEYS } from '@/lib/config'
 import type { Place } from '@/lib/types'
 
