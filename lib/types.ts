@@ -131,6 +131,8 @@ export interface GetPlacesParams {
   source?: string
   brand_wikidata?: string
   brand_name?: string
+  /** Type-ahead: names starting with (or containing a word starting with) this. Min 2 chars. */
+  name_prefix?: string
   min_confidence?: number
   categories?: string
   taxonomy?: string

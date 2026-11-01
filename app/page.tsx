@@ -18,6 +18,8 @@ export default function Home() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['pharmacy'])
   const [selectedBrand, setSelectedBrand] = useState<string | null>('Walgreens')
+  // Search by name (name_prefix). When set, it replaces the category and brand filters.
+  const [nameQuery, setNameQuery] = useState('')
   const [places, setPlaces] = useState<Place[] | null>(null)
   const [placeCount, setPlaceCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -113,6 +115,14 @@ export default function Home() {
     }
   }, [mapCenter, autoSearch, apiKey, isInitialLoad])
 
+  // A new name search (already debounced in the top bar) runs once and zooms to the results
+  useEffect(() => {
+    if (isInitialLoad || !mapRef.current) return
+    const q = nameQuery.trim()
+    if (q.length === 1) return
+    handleShowPlaces({ fitToResults: q.length >= 2 })
+  }, [nameQuery])
+
   // Initial places search after categories and brands are loaded
   useEffect(() => {
     if (isInitialLoad && categories.length > 0 && brands.length > 0 && isMapReady && apiKey) {
@@ -190,13 +200,16 @@ export default function Home() {
       setError(null)
 
       const center = mapRef.current.getCenter()
+      const name = nameQuery.trim()
+      const byName = name.length >= 2
       const placesData = await overtureClient.getPlacesByCenter(apiKey, {
         lat: center.lat,
         lng: center.lng,
         radius,
         limit,
-        categories: selectedCategories?.length > 0 ? selectedCategories.join(',') : undefined,
-        brand_name: selectedBrand || undefined,
+        name_prefix: byName ? name : undefined,
+        categories: !byName && selectedCategories?.length > 0 ? selectedCategories.join(',') : undefined,
+        brand_name: !byName ? selectedBrand || undefined : undefined,
         // Opt in to Wikidata-sourced brand details (logo, website, industry)
         enrichment_fields: 'brand'
       })
@@ -258,11 +271,18 @@ export default function Home() {
     const extBrand = place.properties.ext_brand
     const brandLogo = extBrand?.logo_url ? `${extBrand.logo_url}?width=80` : null
 
+    // Overture data comes from many sources; never let it inject markup into the popup
+    const esc = (v: unknown): string =>
+      String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] as string)
+    const safeUrl = (u?: string | null): string | null => (u && /^https?:\/\//i.test(u) ? esc(u) : null)
+    const logoUrl = safeUrl(brandLogo)
+    const brandSite = safeUrl(extBrand?.website)
+
     const popupContent = `
       <div class="p-4 text-gray-900 min-w-128">
         <div class="flex items-center gap-3 mb-3">
-          ${brandLogo ? `<img src="${brandLogo}" alt="${extBrand?.label || brand} logo" class="h-8 max-w-[80px] object-contain" onerror="this.style.display='none'" />` : ''}
-          <h3 class="font-semibold text-gray-900 text-lg">${placeName}</h3>
+          ${logoUrl ? `<img src="${logoUrl}" alt="${esc(extBrand?.label || brand)} logo" class="h-8 max-w-[80px] object-contain" onerror="this.style.display='none'" />` : ''}
+          <h3 class="font-semibold text-gray-900 text-lg">${esc(placeName)}</h3>
         </div>
         <div class="space-y-2 text-sm">
           <div class="flex justify-left">
@@ -272,38 +292,38 @@ export default function Home() {
           ${operatingStatus ? `
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Status:&nbsp;</span>
-            <span class="${operatingStatus === 'open' ? 'text-green-700' : 'text-red-700'}">${operatingStatus.replace(/_/g, ' ')}</span>
+            <span class="${operatingStatus === 'open' ? 'text-green-700' : 'text-red-700'}">${esc(operatingStatus.replace(/_/g, ' '))}</span>
           </div>` : ''}
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Category:&nbsp;</span>
-            <span class="text-gray-900"> ${category}</span>
+            <span class="text-gray-900"> ${esc(category)}</span>
           </div>
           ${taxonomyPath ? `
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Taxonomy:&nbsp;</span>
-            <span class="text-gray-500 text-xs">${taxonomyPath}</span>
+            <span class="text-gray-500 text-xs">${esc(taxonomyPath)}</span>
           </div>` : ''}
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Brand:&nbsp;</span>
-            <span class="text-gray-900"> ${brand}</span>
+            <span class="text-gray-900"> ${esc(brand)}</span>
           </div>
-          ${extBrand?.website ? `
+          ${brandSite ? `
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Brand site:&nbsp;</span>
-            <a href="${extBrand.website}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-xs">${extBrand.website}</a>
+            <a href="${brandSite}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline text-xs">${brandSite}</a>
           </div>` : ''}
           ${extBrand?.parent ? `
           <div class="flex justify-left">
             <span class="font-medium text-gray-600">Parent:&nbsp;</span>
-            <span class="text-gray-900">${extBrand.parent}</span>
+            <span class="text-gray-900">${esc(extBrand.parent)}</span>
           </div>` : ''}
           <div class="flex flex-col">
             <span class="font-medium text-gray-600 mb-1">Address:</span>
-            <span class="text-gray-900 text-xs">${address}</span>
+            <span class="text-gray-900 text-xs">${esc(address)}</span>
           </div>
           <div class="flex flex-col">
             <span class="font-medium text-gray-600 mb-1">GERS ID:</span>
-            <span class="text-gray-900 text-xs">${place.properties.id}</span>
+            <span class="text-gray-900 text-xs">${esc(place.properties.id)}</span>
           </div>
         </div>
       </div>
@@ -380,6 +400,8 @@ export default function Home() {
         brands={brands}
         selectedBrand={selectedBrand}
         onBrandChange={handleBrandChange}
+        nameQuery={nameQuery}
+        onNameQueryChange={setNameQuery}
         radius={radius}
         onRadiusChange={handleRadiusChange}
         limit={limit}
