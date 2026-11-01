@@ -14,6 +14,8 @@ export interface TopBarProps {
   brands: Brand[]
   selectedBrand: string | null
   onBrandChange: (brand: string | null) => void
+  nameQuery: string
+  onNameQueryChange: (q: string) => void
   radius: number
   onRadiusChange: (radius: number) => void
   limit: number
@@ -37,6 +39,8 @@ export default function TopBar({
   brands,
   selectedBrand,
   onBrandChange,
+  nameQuery,
+  onNameQueryChange,
   onShowPlaces,
   placeCount,
   onClearResults,
@@ -52,6 +56,14 @@ export default function TopBar({
 }: TopBarProps) {
   const [localRadius, setLocalRadius] = useState(radius)
   const [localLimit, setLocalLimit] = useState(limit)
+  const [localName, setLocalName] = useState(nameQuery)
+
+  // Debounce name search: each search is a request, so wait until typing pauses
+  useEffect(() => {
+    if (localName === nameQuery) return
+    const timeout = setTimeout(() => onNameQueryChange(localName), 400)
+    return () => clearTimeout(timeout)
+  }, [localName])
 
   // Sync localRadius with prop
   useEffect(() => {
@@ -164,6 +176,24 @@ export default function TopBar({
                   . Repeat searches are free.
                 </>
               )}
+            </p>
+          </div>
+
+          {/* Name search */}
+          <div className="w-full lg:w-56">
+            <label htmlFor="name-search" className="block text-sm font-medium text-gray-700 mb-1">
+              Search by name
+            </label>
+            <input
+              id="name-search"
+              type="search"
+              value={localName}
+              onChange={(e) => setLocalName(e.target.value)}
+              placeholder="e.g. blue bottle"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              {localName.trim().length >= 2 ? 'Searching by name; categories and brand are ignored.' : 'Two or more letters.'}
             </p>
           </div>
 
